@@ -2,7 +2,7 @@
 
 import hashlib
 import re
-from email import message_from_binary_file, policy
+from email import message_from_bytes, policy
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -26,23 +26,61 @@ def _auth_results(msg: EmailMessage) -> dict:
     return out
 
 
-def parse_email(file_path: str) -> dict:
-    """Parsea un correo .eml y devuelve cabeceras, autenticación, cuerpo y adjuntos.
+def _escribir_cuarentena(nombre: str, datos: bytes) -> dict:
+    """Escribe un adjunto en cuarentena con sufijo NO ejecutable y lo describe."""
+    sha = _sha256(datos)
+    destino = CUARENTENA / f"{sha[:12]}_{Path(nombre).name}{SUFIJO_CUARENTENA}"
+    destino.write_bytes(datos)
+    return {
+        "nombre": nombre,  # nombre original declarado en el correo
+        "sha256": sha,
+        "tamano_bytes": len(datos),
+        "ruta": str(destino),  # ruta de la copia en cuarentena
+    }
 
-    Extrae remitente, destinatario, asunto, fecha, Message-ID, ruta de servidores
-    (Received), veredicto SPF/DKIM/DMARC, el cuerpo en texto y la lista de adjuntos
-    (cada uno con su SHA-256 y la ruta donde se ha guardado para analizar después).
+
+def _guardar(ruta: Path, datos_file: bytes, meta: dict, adjuntos: list) -> dict:
+    """Guarda los HECHOS en el store (el dictamen los toma de aquí, no del LLM)."""
+    context.EVIDENCIA["correo"] = {
+        "evidencia": ruta.name,
+        "tamano_bytes": len(datos_file),
+        "sha256": _sha256(datos_file),
+        "md5": hashlib.md5(datos_file).hexdigest(),
+        "remitente": meta["remitente"],
+        "destinatario": meta["destinatario"],
+        "asunto": meta["asunto"],
+        "fecha": meta["fecha"],
+        "return_path": meta["return_path"],
+        "message_id": meta["message_id"],
+        "autenticacion": meta["autenticacion"],
+    }
+    context.EVIDENCIA["adjuntos"] = [dict(a) for a in adjuntos]
+    return {**meta, "adjuntos": adjuntos}
+
+
+def parse_email(file_path: str) -> dict:
+    """Parsea un correo .eml o .msg y devuelve cabeceras, autenticación, cuerpo y adjuntos.
+
+    Detecta el formato por extensión/firma. Extrae remitente, destinatario, asunto,
+    fecha, Message-ID, Received, veredicto SPF/DKIM/DMARC, el cuerpo en texto y los
+    adjuntos (cada uno con su SHA-256 y la ruta de la copia en cuarentena).
 
     Args:
-        file_path: Ruta al fichero .eml en disco.
+        file_path: Ruta al fichero .eml o .msg en disco.
     """
     asegurar_directorios()
     ruta = Path(file_path)
     if not ruta.exists():
         return {"error": f"No existe el fichero: {file_path}"}
 
-    with ruta.open("rb") as f:
-        msg: EmailMessage = message_from_binary_file(f, policy=policy.default)
+    datos_file = ruta.read_bytes()
+    # .msg de Outlook es un contenedor OLE (firma D0 CF 11 E0).
+    es_msg = ruta.suffix.lower() == ".msg" or datos_file[:4] == b"\xd0\xcf\x11\xe0"
+    return _parse_msg(ruta, datos_file) if es_msg else _parse_eml(ruta, datos_file)
+
+
+def _parse_eml(ruta: Path, datos_file: bytes) -> dict:
+    msg: EmailMessage = message_from_bytes(datos_file, policy=policy.default)
 
     cuerpo = ""
     if msg.get_body(preferencelist=("plain",)):
@@ -50,25 +88,15 @@ def parse_email(file_path: str) -> dict:
     elif msg.get_body(preferencelist=("html",)):
         cuerpo = msg.get_body(preferencelist=("html",)).get_content()
 
-    adjuntos = []
-    for parte in msg.iter_attachments():
-        nombre = parte.get_filename() or "sin_nombre.bin"
-        datos = parte.get_payload(decode=True) or b""
-        sha = _sha256(datos)
-        # Se escribe en cuarentena con sufijo NO ejecutable: aunque el adjunto
-        # sea un .exe disfrazado, el fichero en disco no es doble-clicable.
-        destino = CUARENTENA / f"{sha[:12]}_{Path(nombre).name}{SUFIJO_CUARENTENA}"
-        destino.write_bytes(datos)
-        adjuntos.append(
-            {
-                "nombre": nombre,  # nombre original declarado en el correo
-                "sha256": sha,
-                "tamano_bytes": len(datos),
-                "ruta": str(destino),  # ruta de la copia en cuarentena
-            }
+    adjuntos = [
+        _escribir_cuarentena(
+            parte.get_filename() or "sin_nombre.bin",
+            parte.get_payload(decode=True) or b"",
         )
+        for parte in msg.iter_attachments()
+    ]
 
-    resultado = {
+    meta = {
         "remitente": msg.get("From", ""),
         "destinatario": msg.get("To", ""),
         "asunto": msg.get("Subject", ""),
@@ -78,26 +106,54 @@ def parse_email(file_path: str) -> dict:
         "received": msg.get_all("Received", []),
         "autenticacion": _auth_results(msg),
         "cuerpo": cuerpo[:8000],
-        "adjuntos": adjuntos,
     }
+    return _guardar(ruta, datos_file, meta, adjuntos)
 
-    # Guarda los HECHOS en el store (el dictamen los toma de aquí, no del LLM).
-    datos_eml = ruta.read_bytes()
-    context.EVIDENCIA["correo"] = {
-        "evidencia": ruta.name,
-        "tamano_bytes": len(datos_eml),
-        "sha256": _sha256(datos_eml),
-        "md5": hashlib.md5(datos_eml).hexdigest(),
-        "remitente": resultado["remitente"],
-        "destinatario": resultado["destinatario"],
-        "asunto": resultado["asunto"],
-        "fecha": resultado["fecha"],
-        "return_path": resultado["return_path"],
-        "message_id": resultado["message_id"],
-        "autenticacion": resultado["autenticacion"],
-    }
-    context.EVIDENCIA["adjuntos"] = [dict(a) for a in adjuntos]
-    return resultado
+
+def _parse_msg(ruta: Path, datos_file: bytes) -> dict:
+    try:
+        import extract_msg
+    except ImportError:
+        return {"error": "Para analizar .msg instala extract-msg (pip install extract-msg)."}
+
+    try:
+        m = extract_msg.Message(str(ruta))
+    except Exception as e:  # noqa: BLE001 — fichero corrupto o no es un .msg válido
+        return {"error": f"No se pudo abrir el .msg: {str(e)[:200]}"}
+
+    try:
+        hdr = m.header  # email.message.Message con las cabeceras de transporte, o None
+        if hdr is not None:
+            received = hdr.get_all("Received", [])
+            autenticacion = _auth_results(hdr)
+            return_path = hdr.get("Return-Path", "")
+            message_id = hdr.get("Message-ID", "") or (m.messageId or "")
+        else:
+            received, return_path = [], ""
+            autenticacion = {"spf": "desconocido", "dkim": "desconocido", "dmarc": "desconocido"}
+            message_id = m.messageId or ""
+
+        adjuntos = []
+        for att in m.attachments:
+            nombre = att.longFilename or att.shortFilename or "sin_nombre.bin"
+            datos = att.data
+            if isinstance(datos, (bytes, bytearray)):  # ignora adjuntos .msg anidados
+                adjuntos.append(_escribir_cuarentena(nombre, bytes(datos)))
+
+        meta = {
+            "remitente": m.sender or "",
+            "destinatario": m.to or "",
+            "asunto": m.subject or "",
+            "fecha": str(m.date or ""),
+            "message_id": message_id,
+            "return_path": return_path,
+            "received": received,
+            "autenticacion": autenticacion,
+            "cuerpo": (m.body or "")[:8000],
+        }
+    finally:
+        m.close()
+    return _guardar(ruta, datos_file, meta, adjuntos)
 
 
 # --- Extracción de IOCs ---

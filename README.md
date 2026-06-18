@@ -2,7 +2,7 @@
 
 **Agente DFIR autónomo: triaje de correo malicioso → borrador de dictamen pericial.**
 
-Le pasas un correo (`.eml`). Veredictum lo analiza en estático con herramientas
+Le pasas un correo (`.eml` o `.msg`). Veredictum lo analiza en estático con herramientas
 forenses, un agente LLM razona sobre los hechos y genera un **borrador de
 dictamen pericial en Word** — marcando lo que **no** puede confirmar para que un
 perito humano lo valide, en lugar de alucinar conclusiones.
@@ -36,7 +36,7 @@ perito humano lo valide, en lugar de alucinar conclusiones.
 
 ## Características
 
-- **Parseo de correo**: cabeceras, autenticación SPF/DKIM/DMARC, cuerpo, adjuntos.
+- **Parseo de correo** (`.eml` y `.msg` de Outlook): cabeceras, autenticación SPF/DKIM/DMARC, cuerpo, adjuntos.
 - **Extracción de IOCs**: URLs, IPs, dominios, correos y hashes (en formato *defang*).
 - **Análisis de adjuntos en estático**: hashes (MD5/SHA-1/SHA-256), tipo real por
   *magic bytes* (detecta un `.exe` disfrazado de `.zip`), y macros VBA con `olevba`.
@@ -300,7 +300,7 @@ tests/                 Pruebas de humo
 ## Roadmap
 
 - [x] **Análisis dinámico** vía sandboxes de VirusTotal (comportamiento + MITRE ATT&CK).
-- [ ] Soporte de correo `.msg` (Outlook).
+- [x] Soporte de correo `.msg` (Outlook).
 - [ ] Reglas **YARA** sobre adjuntos.
 - [ ] **Detonación propia** en sandbox local instrumentado (VM Windows aislada).
 - [ ] Opción de **LLM local** (Ollama) para flujo 100 % offline.
