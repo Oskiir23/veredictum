@@ -1,0 +1,10 @@
+{
+  "name": "veredictum-renderer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Renderer Node (docx-js) que genera el dictamen pericial de Veredictum",
+  "license": "MIT",
+  "dependencies": {
+    "docx": "^9.7.1"
+  }
+}

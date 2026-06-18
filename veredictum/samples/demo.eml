@@ -1,0 +1,29 @@
+From: "Soporte Banco" <no-reply@banco-seguro.example>
+To: victima@empresa.example
+Subject: Factura pendiente - accion requerida
+Date: Mon, 02 Feb 2026 09:14:00 +0100
+Message-ID: <abc123@banco-seguro.example>
+Return-Path: <bounce@mail.sospechoso.example>
+Authentication-Results: mx.empresa.example; spf=fail smtp.mailfrom=banco-seguro.example; dkim=none; dmarc=fail
+Received: from mail.sospechoso.example (185.220.101.5) by mx.empresa.example
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="LIMITE"
+
+--LIMITE
+Content-Type: text/plain; charset="utf-8"
+
+Estimado cliente,
+
+Su factura esta pendiente. Descargue el documento adjunto y habilite las macros
+para visualizarla. Si no actua hoy, su cuenta sera suspendida.
+
+Acceda tambien en: http://login-banco-seguro.example/verificar?id=99
+
+Atentamente,
+Departamento de Facturacion
+--LIMITE
+Content-Type: text/plain; name="factura.txt"
+Content-Disposition: attachment; filename="factura.txt"
+
+Contenido inocuo de prueba para el adjunto.
+--LIMITE--

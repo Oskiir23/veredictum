@@ -1,0 +1,39 @@
+{
+  "caso_id": "DEMO-001",
+  "fecha_emision": "12 de junio de 2026",
+  "correo": {
+    "evidencia": "demo.eml",
+    "tamano_bytes": 1024,
+    "sha256": "fdfbf9f475311088249e61c21a57c88e59391c01528ce55353da43b46e4259a8",
+    "md5": "aaaa1111bbbb2222cccc3333dddd4444",
+    "remitente": "Soporte Banco <no-reply@banco-seguro.example>",
+    "destinatario": "victima@empresa.example",
+    "asunto": "Factura pendiente - accion requerida",
+    "fecha": "Mon, 02 Feb 2026 09:14:00 +0100",
+    "return_path": "bounce@mail.sospechoso.example",
+    "message_id": "<abc123@banco-seguro.example>",
+    "autenticacion": { "spf": "fail", "dkim": "none", "dmarc": "fail" }
+  },
+  "adjuntos": [
+    { "nombre": "factura.txt", "sha256": "fdfbf9f475311088249e61c21a57c88e59391c01528ce55353da43b46e4259a8", "tipo_real": "desconocido", "macros": "sin_macros" }
+  ],
+  "vt": { "fdfbf9f475311088249e61c21a57c88e59391c01528ce55353da43b46e4259a8": { "estado": "no_consultado" } },
+  "iocs": {
+    "urls": ["http://login-banco-seguro.example/verificar?id=99"],
+    "ips": [],
+    "dominios": ["login-banco-seguro.example"],
+    "correos": ["no-reply@banco-seguro.example"],
+    "hashes": []
+  },
+  "narrativa": {
+    "veredicto": "Malicioso",
+    "nivel_confianza": "Alto",
+    "resumen": "El correo es un intento de phishing que suplanta a una entidad bancaria.",
+    "resumen_bullets": ["Falla SPF, DKIM y DMARC: el remitente no es legítimo.", "Usa urgencia para forzar la acción del usuario."],
+    "hallazgos": ["Autenticación SPF/DKIM/DMARC en fallo.", "URL de destino en dominio sospechoso."],
+    "linea_temporal": ["02/02/2026 09:14: recepción del correo."],
+    "conclusiones": ["El mensaje es fraudulento.", "El remitente está suplantado."],
+    "incertidumbres": ["El hash del adjunto no se consultó en VirusTotal (sin clave)."],
+    "recomendaciones": ["Bloquear el dominio remitente.", "No interactuar con el enlace."]
+  }
+}

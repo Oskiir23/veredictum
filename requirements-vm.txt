@@ -1,0 +1,5 @@
+# Dependencias MÍNIMAS para la VM aislada (solo extracción offline).
+# Sin LLM, sin internet, sin generación de .docx.
+oletools>=5.4         # olevba: macros maliciosas
+extract-msg>=0.54     # leer .msg de Outlook
+python-dotenv>=1.0    # carga de config

@@ -1,0 +1,33 @@
+# === SECRETOS — nunca subir ===
+.env
+
+# === Entornos / cachés ===
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# === Node ===
+node_modules/
+
+# === Salidas y datos sensibles ===
+salida/
+
+# === Carpeta de transferencia VM ===
+# Solo se versionan los scripts; el extractor se genera con preparar_transfer.py
+# y entrada/ puede contener malware real.
+transfer_vm/*
+!transfer_vm/correr_en_vm.sh
+!transfer_vm/LEEME.md
+!transfer_vm/entrada/
+!transfer_vm/salida/
+transfer_vm/entrada/*
+transfer_vm/salida/*
+!transfer_vm/entrada/.gitkeep
+!transfer_vm/salida/.gitkeep
+
+# === Muestras de correo reales (posible malware) ===
+*.eml
+*.msg
+# ...excepto la muestra de demostración inofensiva:
+!veredictum/samples/demo.eml

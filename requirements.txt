@@ -1,0 +1,11 @@
+# --- Motor LLM (gratis) ---
+google-genai>=1.0        # Gemini API free tier
+python-dotenv>=1.0
+# Para cambiar a local/privado mañana: pip install ollama  (ver veredictum/llm.py)
+
+# --- Herramientas forenses ---
+oletools>=5.4            # olevba: macros maliciosas en Office
+extract-msg>=0.54        # leer .msg de Outlook
+vt-py>=0.18              # VirusTotal (opcional, con key)
+python-docx>=1.1         # generar el dictamen .docx
+# yara-python            # fase 2 — descomentar cuando haya wheel para tu Python
