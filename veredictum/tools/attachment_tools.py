@@ -129,3 +129,59 @@ def vt_lookup(sha256: str) -> dict:
         res = {"estado": "error_o_no_encontrado", "detalle": str(e)}
     context.EVIDENCIA.setdefault("vt", {})[sha256] = res
     return res
+
+
+def _top(lst, n):
+    return (lst or [])[:n]
+
+
+def vt_behaviour(sha256: str) -> dict:
+    """Obtiene el COMPORTAMIENTO DINÁMICO observado en los sandboxes de VirusTotal.
+
+    NO ejecuta el fichero en este equipo: recupera el resumen de la detonación que
+    VirusTotal ya realizó en sus entornos (procesos creados, ficheros soltados,
+    cambios en el registro, conexiones de red y técnicas MITRE ATT&CK). Requiere
+    VT_API_KEY. Úsalo tras vt_lookup cuando el adjunto sea ejecutable/sospechoso.
+
+    Args:
+        sha256: Hash SHA-256 del fichero.
+    """
+    store = context.EVIDENCIA.setdefault("comportamiento", {})
+    if not VT_API_KEY:
+        store[sha256] = {"estado": "no_consultado", "motivo": "sin VT_API_KEY en .env"}
+        return store[sha256]
+    try:
+        import vt
+
+        with vt.Client(VT_API_KEY) as cliente:
+            s = cliente.get_data(f"/files/{sha256}/behaviour_summary")
+    except Exception as e:  # noqa: BLE001 — 404 = sin informe de comportamiento
+        store[sha256] = {"estado": "sin_datos_o_error", "detalle": str(e)[:200]}
+        return store[sha256]
+
+    def _reg(r):
+        return r.get("key", "") if isinstance(r, dict) else str(r)
+
+    res = {
+        "estado": "consultado",
+        "fuente": "sandboxes de VirusTotal (detonación externa)",
+        "procesos": _top(s.get("processes_created") or s.get("command_executions"), 15),
+        "ficheros_soltados": [
+            {"ruta": d.get("path", ""), "sha256": d.get("sha256", "")}
+            for d in _top(s.get("files_dropped"), 10)
+        ],
+        "ficheros_escritos": _top(s.get("files_written"), 10),
+        "registro": [_reg(r) for r in _top(s.get("registry_keys_set"), 15)],
+        "ips": [
+            f"{t.get('destination_ip', '')}:{t.get('destination_port', '')}"
+            f"/{t.get('transport_layer_protocol', '')}"
+            for t in _top(s.get("ip_traffic"), 10)
+        ],
+        "dns": [d.get("hostname", "") for d in _top(s.get("dns_lookups"), 10)],
+        "mitre": [
+            f"{m.get('id', '')} — {m.get('signature_description', '')}".strip(" —")
+            for m in _top(s.get("mitre_attack_techniques"), 20)
+        ],
+    }
+    store[sha256] = res
+    return res

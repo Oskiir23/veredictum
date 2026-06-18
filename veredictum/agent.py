@@ -8,7 +8,7 @@ from pathlib import Path
 from . import context
 from .llm import run_agent
 from .tools import HERRAMIENTAS
-from .tools.attachment_tools import vt_lookup
+from .tools.attachment_tools import vt_behaviour, vt_lookup
 from .tools.report_tools import write_report
 
 SYSTEM = """\
@@ -23,6 +23,8 @@ Procedimiento:
 1. parse_email sobre la ruta indicada. Estudia cabeceras y autenticación SPF/DKIM/DMARC.
 2. extract_iocs sobre el cuerpo (y cabeceras si procede).
 3. Para CADA adjunto, analyze_attachment usando su campo 'ruta'. Después, vt_lookup con su sha256.
+   Si el adjunto es ejecutable o sospechoso, llama también a vt_behaviour(sha256) para
+   obtener su comportamiento dinámico (procesos, ficheros, registro, red, MITRE ATT&CK).
 4. Correla todo en una línea temporal y un veredicto.
 5. write_report al final. NO le pases hashes, IOCs ni datos de adjuntos: esos hechos
    se añaden solos desde el análisis. Tú aportas solo el razonamiento:
@@ -72,15 +74,18 @@ por seguridad: razonas solo sobre los hechos en texto.
 
 Herramientas disponibles:
 - vt_lookup(sha256): consulta un hash en VirusTotal (solo el hash sale a la red).
-- write_report(...): genera el borrador de dictamen. NO le pases hashes/IOCs/adjuntos:
-  esos hechos se añaden solos. Tú aportas el razonamiento (veredicto, nivel_confianza,
-  resumen, resumen_bullets, hallazgos, linea_temporal, conclusiones SIN ordinal,
-  incertidumbres, recomendaciones).
+- vt_behaviour(sha256): comportamiento dinámico del fichero según los sandboxes de
+  VirusTotal (procesos, ficheros soltados, registro, red, MITRE ATT&CK). NO se ejecuta
+  nada aquí; son datos de la detonación externa de VT.
+- write_report(...): genera el borrador de dictamen. NO le pases hashes/IOCs/adjuntos/
+  comportamiento: esos hechos se añaden solos. Tú aportas el razonamiento (veredicto,
+  nivel_confianza, resumen, resumen_bullets, hallazgos, linea_temporal, conclusiones
+  SIN ordinal, incertidumbres, recomendaciones).
 
 Procedimiento:
 1. Estudia los hechos proporcionados.
-2. Para cada hash de adjunto, llama a vt_lookup.
-3. Correla y llama a write_report con tu razonamiento.
+2. Para cada hash de adjunto: vt_lookup y, si es ejecutable/sospechoso, vt_behaviour.
+3. Correla (incluye el comportamiento dinámico en hallazgos/conclusiones) y llama a write_report.
 
 REGLA DE ORO: si la evidencia no soporta una conclusión, márcala en 'incertidumbres'
 y usa "No concluyente" cuando proceda. NO alucines detecciones ni atribuciones.
@@ -88,7 +93,7 @@ y usa "No concluyente" cuando proceda. NO alucines detecciones ni atribuciones.
 Al terminar, resume en 3-4 líneas qué has concluido y dónde quedó el borrador.
 """
 
-_HERRAMIENTAS_HOST = [vt_lookup, write_report]
+_HERRAMIENTAS_HOST = [vt_lookup, vt_behaviour, write_report]
 
 
 def dictaminar_desde_hechos(facts: dict, caso_id: str) -> str:

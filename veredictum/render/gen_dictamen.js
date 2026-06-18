@@ -231,6 +231,33 @@ const desarrollo = [
   ...((N.linea_temporal || []).length ? [H2("8.5. Línea temporal"), ...(N.linea_temporal || []).map((t) => bullet(t))] : []),
 ];
 
+/* 8.6 Comportamiento dinámico (de los sandboxes de VirusTotal) */
+const _comp = D.comportamiento || {};
+const _compAdj = (D.adjuntos || []).map((a) => [a, _comp[a.sha256]]).filter(([, c]) => c && c.estado === "consultado");
+if (_compAdj.length) {
+  const _df = (x) => String(x).replace(/\./g, "[.]");
+  desarrollo.push(H2("8.6. Comportamiento dinámico (sandbox de VirusTotal)"));
+  desarrollo.push(P("Resumen del comportamiento del adjunto al ejecutarse, obtenido de la detonación realizada por los sandboxes de VirusTotal. El análisis local de Veredictum es estático: estos datos NO provienen de una ejecución en este entorno."));
+  for (const [a, c] of _compAdj) {
+    desarrollo.push(P([new TextRun({ text: `Adjunto: ${a.nombre} (${(a.sha256 || "").slice(0, 16)}…)`, bold: true })]));
+    const secc = (titulo, items) => {
+      if (!items || !items.length) return;
+      desarrollo.push(P([new TextRun({ text: titulo, bold: true })]));
+      items.forEach((it) => {
+        const txt = typeof it === "string" ? it
+          : (it.ruta ? `${it.ruta}${it.sha256 ? " (" + it.sha256.slice(0, 16) + "…)" : ""}` : JSON.stringify(it));
+        desarrollo.push(bullet(txt));
+      });
+    };
+    secc("Procesos creados:", c.procesos);
+    secc("Ficheros soltados:", c.ficheros_soltados);
+    secc("Cambios en el registro:", c.registro);
+    secc("Conexiones de red (IPs):", (c.ips || []).map(_df));
+    secc("Resoluciones DNS:", (c.dns || []).map(_df));
+    secc("Técnicas MITRE ATT&CK:", c.mitre);
+  }
+}
+
 /* ============================ 9. LIMITACIONES (INCERTIDUMBRES) ============================ */
 const incert = [
   H1("9. LIMITACIONES DEL ANÁLISIS Y PUNTOS PARA VALIDACIÓN PERICIAL"),

@@ -41,6 +41,9 @@ perito humano lo valide, en lugar de alucinar conclusiones.
 - **Análisis de adjuntos en estático**: hashes (MD5/SHA-1/SHA-256), tipo real por
   *magic bytes* (detecta un `.exe` disfrazado de `.zip`), y macros VBA con `olevba`.
 - **VirusTotal**: consulta por hash (nunca se sube el fichero).
+- **Comportamiento dinámico**: recupera el informe de detonación de los sandboxes de
+  VirusTotal (procesos, ficheros soltados, registro, red y técnicas MITRE ATT&CK) sin
+  ejecutar nada en local.
 - **Dictamen en Word** con plantilla pericial: portada TLP, juramento, normativa,
   metodología, IOCs, conclusiones numeradas, cadena de custodia.
 - **Marcado de incertidumbre**: lo no concluyente se lleva a una sección de
@@ -296,9 +299,10 @@ tests/                 Pruebas de humo
 
 ## Roadmap
 
+- [x] **Análisis dinámico** vía sandboxes de VirusTotal (comportamiento + MITRE ATT&CK).
 - [ ] Soporte de correo `.msg` (Outlook).
 - [ ] Reglas **YARA** sobre adjuntos.
-- [ ] **Análisis dinámico** (detonación en sandbox aislado).
+- [ ] **Detonación propia** en sandbox local instrumentado (VM Windows aislada).
 - [ ] Opción de **LLM local** (Ollama) para flujo 100 % offline.
 
 ---

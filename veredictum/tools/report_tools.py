@@ -67,6 +67,7 @@ def write_report(
         "correo": context.EVIDENCIA.get("correo", {}),
         "adjuntos": context.EVIDENCIA.get("adjuntos", []),
         "vt": context.EVIDENCIA.get("vt", {}),
+        "comportamiento": context.EVIDENCIA.get("comportamiento", {}),
         "iocs": context.EVIDENCIA.get("iocs", {}),
         "narrativa": {
             "veredicto": veredicto,
