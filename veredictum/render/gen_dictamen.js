@@ -225,6 +225,17 @@ const desarrollo = [
     ? [ tablecap("Caracterización de los archivos adjuntos."),
         table(["Nombre", "Tipo real", "Macros", "SHA-256", "VirusTotal"], filasAdjuntos, [2200, 1700, 1500, 2660, 1300]) ]
     : [ P("El mensaje no contiene archivos adjuntos.") ]),
+  ...(() => {
+    const filas = [];
+    (D.adjuntos || []).forEach((a) => {
+      ((a.yara || {}).coincidencias || []).forEach((c) =>
+        filas.push([a.nombre, c.regla, c.descripcion || ""]));
+    });
+    return filas.length
+      ? [tablecap("Coincidencias de reglas YARA en los adjuntos."),
+         table(["Adjunto", "Regla YARA", "Descripción"], filas, [2200, 2600, 4560])]
+      : [];
+  })(),
   spacer(),
   H2("8.4. Hallazgos técnicos"),
   ...((N.hallazgos || []).length ? (N.hallazgos || []).map((h) => bullet(h)) : [P("Sin hallazgos técnicos adicionales.")]),

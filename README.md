@@ -41,6 +41,8 @@ perito humano lo valide, en lugar de alucinar conclusiones.
 - **Análisis de adjuntos en estático**: hashes (MD5/SHA-1/SHA-256), tipo real por
   *magic bytes* (detecta un `.exe` disfrazado de `.zip`), y macros VBA con `olevba`.
 - **VirusTotal**: consulta por hash (nunca se sube el fichero).
+- **Reglas YARA**: escaneo de adjuntos con `yara-x`; reglas ampliables en
+  `veredictum/rules/` (o vía `VEREDICTUM_YARA_RULES`).
 - **Comportamiento dinámico**: recupera el informe de detonación de los sandboxes de
   VirusTotal (procesos, ficheros soltados, registro, red y técnicas MITRE ATT&CK) sin
   ejecutar nada en local.
@@ -179,6 +181,17 @@ Crea (o clona) una VM Linux en VirtualBox. Recomendado partir de una imagen ya
 instalada de Kali/Parrot. **Trabaja siempre sobre un clon desechable**, no sobre
 tu VM principal.
 
+**Instala las dependencias del extractor MIENTRAS la VM aún tiene red** (antes de
+aislarla en el paso 2). Las wheels son específicas de Linux, por eso se instalan
+dentro de la VM y no se pueden empaquetar desde el host:
+
+```bash
+pip install yara-x oletools extract-msg        # en la VM, con red
+```
+
+Si alguna falta, el extractor la omite sin romper (p. ej. sin `yara-x` no escanea
+reglas, sin `oletools` no analiza macros).
+
 ### 2. Endurecer la VM (qué desactivar)
 
 Con la VM **apagada**, abre **Configuración** y aplica:
@@ -301,7 +314,7 @@ tests/                 Pruebas de humo
 
 - [x] **Análisis dinámico** vía sandboxes de VirusTotal (comportamiento + MITRE ATT&CK).
 - [x] Soporte de correo `.msg` (Outlook).
-- [ ] Reglas **YARA** sobre adjuntos.
+- [x] Reglas **YARA** sobre adjuntos (motor `yara-x`; reglas en `veredictum/rules/`).
 - [ ] **Detonación propia** en sandbox local instrumentado (VM Windows aislada).
 - [ ] Opción de **LLM local** (Ollama) para flujo 100 % offline.
 

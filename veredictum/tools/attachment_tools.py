@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 
 from .. import context
-from ..config import VT_API_KEY
+from ..config import RULES_DIR, VT_API_KEY
 
 # Firmas de cabecera (magic bytes) para identificar el tipo real, no la extensión.
 _FIRMAS = {
@@ -59,6 +59,41 @@ def _analizar_macros(ruta: str) -> dict:
         return {"macros": "error", "detalle": str(e)}
 
 
+def _yara_scan(ruta: str) -> dict:
+    """Escanea un fichero con las reglas YARA (motor yara-x). Tolerante a ausencias."""
+    try:
+        import yara_x
+    except ImportError:
+        return {"estado": "yara_no_disponible"}
+
+    fuentes = list(RULES_DIR.glob("*.yar")) + list(RULES_DIR.glob("*.yara"))
+    if not fuentes:
+        return {"estado": "sin_reglas"}
+    try:
+        compiler = yara_x.Compiler()
+        for f in fuentes:
+            compiler.add_source(f.read_text(encoding="utf-8"), origin=f.name)
+        rules = compiler.build()
+        resultados = yara_x.Scanner(rules).scan(Path(ruta).read_bytes())
+    except Exception as e:  # noqa: BLE001
+        return {"estado": "error", "detalle": str(e)[:200]}
+
+    coincidencias = []
+    for r in resultados.matching_rules:
+        try:
+            meta = {k: v for (k, v) in r.metadata}
+        except Exception:  # noqa: BLE001
+            meta = {}
+        coincidencias.append(
+            {
+                "regla": r.identifier,
+                "tags": list(getattr(r, "tags", []) or []),
+                "descripcion": meta.get("description", ""),
+            }
+        )
+    return {"estado": "escaneado", "coincidencias": coincidencias}
+
+
 def analyze_attachment(file_path: str) -> dict:
     """Analiza un adjunto en estático (NO lo ejecuta).
 
@@ -83,6 +118,9 @@ def analyze_attachment(file_path: str) -> dict:
     if resultado["tipo_real"] in ("ofimatica_OLE", "zip_u_ofimatica_moderna"):
         resultado.update(_analizar_macros(str(ruta)))
 
+    # Reglas YARA sobre el fichero.
+    resultado["yara"] = _yara_scan(str(ruta))
+
     # Enriquece el adjunto correspondiente en el store (match por SHA-256).
     sha = resultado["hashes"]["sha256"]
     for adj in context.EVIDENCIA.get("adjuntos", []):
@@ -93,6 +131,7 @@ def analyze_attachment(file_path: str) -> dict:
                     "md5": resultado["hashes"]["md5"],
                     "sha1": resultado["hashes"]["sha1"],
                     "macros": resultado.get("macros", "sin_macros"),
+                    "yara": resultado["yara"],
                 }
             )
             break

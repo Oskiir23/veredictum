@@ -2,4 +2,5 @@
 # Sin LLM, sin internet, sin generación de .docx.
 oletools>=5.4         # olevba: macros maliciosas
 extract-msg>=0.54     # leer .msg de Outlook
+yara-x>=1.0           # reglas YARA (opcional; si falta, se omite el escaneo)
 python-dotenv>=1.0    # carga de config

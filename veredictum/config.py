@@ -25,6 +25,11 @@ SALIDA = Path(os.getenv("VEREDICTUM_SALIDA", "salida")).resolve()
 CUARENTENA = SALIDA / "cuarentena"
 SUFIJO_CUARENTENA = ".quarantine"
 
+# Carpeta de reglas YARA (.yar/.yara). Override con VEREDICTUM_YARA_RULES.
+RULES_DIR = Path(
+    os.getenv("VEREDICTUM_YARA_RULES", str(Path(__file__).resolve().parent / "rules"))
+)
+
 
 def asegurar_directorios() -> None:
     CUARENTENA.mkdir(parents=True, exist_ok=True)
