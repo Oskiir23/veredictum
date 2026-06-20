@@ -1,0 +1,8 @@
+"Time of Day","Process Name","PID","Operation","Path","Result","Detail"
+"10:00:01","factura.exe","1234","Process Create","C:\Users\victima\AppData\Local\Temp\tDJX.exe","SUCCESS","Command line: tDJX.exe"
+"10:00:02","tDJX.exe","2200","WriteFile","C:\Users\victima\AppData\Roaming\payload.dll","SUCCESS","Offset: 0, Length: 51200"
+"10:00:03","tDJX.exe","2200","RegSetValue","HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Updater","SUCCESS","Type: REG_SZ, Data: C:\Users\victima\AppData\Roaming\payload.dll"
+"10:00:04","tDJX.exe","2200","TCP Connect","tDJX.exe -> 103.45.67.89:443","SUCCESS","Length: 0"
+"10:00:05","tDJX.exe","2200","RegSetValue","HKLM\Software\Clases\Foo","SUCCESS","Type: REG_DWORD, Data: 1"
+"10:00:06","tDJX.exe","2200","WriteFile","C:\Users\victima\AppData\Roaming\payload.dll","SUCCESS","Offset: 51200"
+"10:00:07","explorer.exe","900","RegQueryValue","HKCU\Software\X","NAME NOT FOUND","Length: 144"

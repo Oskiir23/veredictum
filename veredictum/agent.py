@@ -96,14 +96,28 @@ Al terminar, resume en 3-4 líneas qué has concluido y dónde quedó el borrado
 _HERRAMIENTAS_HOST = [vt_lookup, vt_behaviour, write_report]
 
 
-def dictaminar_desde_hechos(facts: dict, caso_id: str) -> str:
-    """Genera el dictamen en el host a partir de los hechos extraídos en la VM."""
+def dictaminar_desde_hechos(facts: dict, caso_id: str, detonacion: dict | None = None) -> str:
+    """Genera el dictamen en el host a partir de los hechos extraídos en la VM.
+
+    Si se aporta `detonacion` (artefactos de una detonación propia, p. ej. Procmon),
+    se incorpora como análisis dinámico del laboratorio.
+    """
     context.reset()
     context.EVIDENCIA.update(facts)
+    extra = ""
+    if detonacion and detonacion.get("estado") == "analizado":
+        context.EVIDENCIA["detonacion"] = detonacion
+        extra = (
+            "\n\nANÁLISIS DINÁMICO PROPIO (detonación en laboratorio aislado):\n"
+            f"{json.dumps(detonacion, ensure_ascii=False, indent=2)}\n"
+            "Incorpora estos hallazgos (procesos, ficheros, persistencia, red) en "
+            "el razonamiento y las conclusiones."
+        )
     user = (
         f"Caso: {caso_id}\n\n"
         f"HECHOS extraídos en la VM (estático, offline):\n"
-        f"{json.dumps(facts, ensure_ascii=False, indent=2)}\n\n"
+        f"{json.dumps(facts, ensure_ascii=False, indent=2)}"
+        f"{extra}\n\n"
         f"Genera el borrador de dictamen. Usa caso_id = {caso_id}."
     )
     return run_agent(SYSTEM_HOST, user, _HERRAMIENTAS_HOST)

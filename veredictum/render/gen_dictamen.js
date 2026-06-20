@@ -269,6 +269,24 @@ if (_compAdj.length) {
   }
 }
 
+/* 8.7 Análisis dinámico PROPIO (detonación en laboratorio aislado) */
+const _det = D.detonacion || {};
+if (_det.estado === "analizado") {
+  const _dfn = (x) => String(x).replace(/\./g, "[.]");
+  desarrollo.push(H2("8.7. Análisis dinámico propio (detonación en laboratorio aislado)"));
+  desarrollo.push(P(`Comportamiento observado al ejecutar la muestra en un entorno aislado controlado por el perito. Fuente: ${_det.fuente || "monitorización local"}. La detonación se realizó sin acceso a Internet productivo; la evidencia original se preservó inalterada.`));
+  const secD = (titulo, items, defang) => {
+    if (!items || !items.length) return;
+    desarrollo.push(P([new TextRun({ text: titulo, bold: true })]));
+    (defang ? items.map(_dfn) : items).forEach((it) => desarrollo.push(bullet(String(it))));
+  };
+  secD("Procesos creados:", _det.procesos);
+  secD("Ficheros escritos:", _det.ficheros_escritos);
+  secD("Persistencia (claves de registro):", _det.persistencia);
+  secD("Otros cambios en el registro:", _det.registro);
+  secD("Conexiones de red:", _det.red, true);
+}
+
 /* ============================ 9. LIMITACIONES (INCERTIDUMBRES) ============================ */
 const incert = [
   H1("9. LIMITACIONES DEL ANÁLISIS Y PUNTOS PARA VALIDACIÓN PERICIAL"),

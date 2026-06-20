@@ -46,6 +46,8 @@ perito humano lo valide, en lugar de alucinar conclusiones.
 - **Comportamiento dinámico**: recupera el informe de detonación de los sandboxes de
   VirusTotal (procesos, ficheros soltados, registro, red y técnicas MITRE ATT&CK) sin
   ejecutar nada en local.
+- **Detonación propia**: ingiere artefactos de Process Monitor (CSV) de una detonación
+  en laboratorio aislado → procesos, ficheros, persistencia y red en el dictamen.
 - **Dictamen en Word** con plantilla pericial: portada TLP, juramento, normativa,
   metodología, IOCs, conclusiones numeradas, cadena de custodia.
 - **Marcado de incertidumbre**: lo no concluyente se lleva a una sección de
@@ -257,6 +259,45 @@ caso.
 
 ---
 
+## Análisis dinámico propio (detonación)
+
+Opcional, para obtener comportamiento de **tu propia detonación** (no solo el de
+VirusTotal). Aquí **sí se ejecuta el malware**, así que requiere disciplina de
+sandbox. El adjunto del caso es un PE de Windows → se detona en una **VM Windows
+instrumentada**.
+
+> ⚠️ Detonar malware es peligroso. Hazlo solo en una VM desechable, aislada y con
+> snapshot. Nunca en tu equipo de trabajo.
+
+### Preparar el laboratorio (VM Windows)
+1. VM Windows **desechable** en VirtualBox. Instala **Process Monitor** (Procmon,
+   de Sysinternals) — y opcionalmente FakeNet-NG/INetSim para simular la red.
+2. **Aísla**: red **desconectada** (o falsa con FakeNet), portapapeles y
+   arrastrar-soltar **inhabilitados**.
+3. **Snapshot** del estado limpio.
+
+### Detonar y recoger artefactos
+1. **Desmonta la carpeta compartida** (durante la detonación es una vía de escape).
+2. Arranca Procmon (captura procesos, ficheros, registro y red).
+3. Ejecuta la muestra unos segundos; detén Procmon.
+4. `File → Save → CSV` en Procmon.
+5. Vuelve a montar la carpeta compartida (o usa un disco de transferencia) y copia
+   **solo el CSV** al host.
+6. **Revierte el snapshot** → el malware desaparece.
+
+### Generar el dictamen con la detonación
+En el host, añade el CSV al dictamen con `--procmon`:
+
+```bash
+python dictaminar.py transfer_vm/salida/evidencia.json CASO-ID --procmon ruta/al/procmon.csv
+```
+
+El dictamen incluirá la sección **8.7 "Análisis dinámico propio"** (procesos,
+ficheros escritos, persistencia en registro y conexiones de red), claramente
+diferenciada del comportamiento de VirusTotal (8.6).
+
+---
+
 ## Modelo de seguridad
 
 - **Nunca se ejecuta** ningún adjunto. Solo análisis estático.
@@ -315,7 +356,8 @@ tests/                 Pruebas de humo
 - [x] **Análisis dinámico** vía sandboxes de VirusTotal (comportamiento + MITRE ATT&CK).
 - [x] Soporte de correo `.msg` (Outlook).
 - [x] Reglas **YARA** sobre adjuntos (motor `yara-x`; reglas en `veredictum/rules/`).
-- [ ] **Detonación propia** en sandbox local instrumentado (VM Windows aislada).
+- [x] **Detonación propia**: ingesta de artefactos (Procmon CSV) → dictamen. Ver guía abajo.
+- [ ] Automatizar el laboratorio de detonación (orquestar Sysmon/pcap).
 - [ ] Opción de **LLM local** (Ollama) para flujo 100 % offline.
 
 ---
