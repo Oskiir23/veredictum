@@ -269,32 +269,65 @@ instrumentada**.
 > ⚠️ Detonar malware es peligroso. Hazlo solo en una VM desechable, aislada y con
 > snapshot. Nunca en tu equipo de trabajo.
 
-### Preparar el laboratorio (VM Windows)
-1. VM Windows **desechable** en VirtualBox. Instala **Process Monitor** (Procmon,
-   de Sysinternals) — y opcionalmente FakeNet-NG/INetSim para simular la red.
-2. **Aísla**: red **desconectada** (o falsa con FakeNet), portapapeles y
-   arrastrar-soltar **inhabilitados**.
-3. **Snapshot** del estado limpio.
+### 1. Preparar la VM Windows
+- VM Windows **desechable** en VirtualBox, con **Guest Additions** instaladas
+  (necesarias para la carpeta compartida).
+- Instala **Process Monitor** (Procmon, de Sysinternals) dentro de la VM.
+- `Dispositivos → Carpetas compartidas`: comparte la carpeta `transfer_vm` del
+  proyecto (**Automontar** + **Make Machine-permanent**). Quedará en
+  `\\VBOXSVR\transfer_vm`.
+- Copia el `.eml` a analizar en `transfer_vm/entrada/`.
 
-### Detonar y recoger artefactos
-1. **Desmonta la carpeta compartida** (durante la detonación es una vía de escape).
-2. Arranca Procmon (captura procesos, ficheros, registro y red).
-3. Ejecuta la muestra unos segundos; detén Procmon.
-4. `File → Save → CSV` en Procmon.
-5. Vuelve a montar la carpeta compartida (o usa un disco de transferencia) y copia
-   **solo el CSV** al host.
-6. **Revierte el snapshot** → el malware desaparece.
+### 2. Aislar la VM
+- `Dispositivos → Red` → **desmarca "Conectar adaptador de red"** (sin salida).
+- `Dispositivos → Portapapeles compartido` y `Arrastrar y soltar` → **Inhabilitado**.
 
-### Generar el dictamen con la detonación
-En el host, añade el CSV al dictamen con `--procmon`:
+### 3. Excluir la carpeta de análisis en Windows Defender
+Defender borra la muestra en cuanto se escribe (es malware real). Para poder detonar:
+- **Seguridad de Windows → Protección antivirus y contra amenazas → Administrar la
+  configuración → Exclusiones → Agregar → Carpeta → `C:\analisis`**.
+- *(Alternativa más brusca: desactivar la Protección en tiempo real.)*
 
-```bash
-python dictaminar.py transfer_vm/salida/evidencia.json CASO-ID --procmon ruta/al/procmon.csv
+### 4. Extraer el PE del correo (sin ejecutarlo)
+En una PowerShell de la VM:
+```powershell
+mkdir C:\analisis -Force | Out-Null
+powershell -ExecutionPolicy Bypass -File \\VBOXSVR\transfer_vm\extraer_pe.ps1 -Eml \\VBOXSVR\transfer_vm\entrada\EV-MAIL-01.eml -Out C:\analisis\muestra.bin
 ```
+Debe imprimir **`Cabecera MZ (PE): True`**.
 
-El dictamen incluirá la sección **8.7 "Análisis dinámico propio"** (procesos,
-ficheros escritos, persistencia en registro y conexiones de red), claramente
-diferenciada del comportamiento de VirusTotal (8.6).
+### 5. Snapshot (punto de retorno)
+`Máquina → Tomar instantánea` → nómbrala `pre-detonacion`.
+
+### 6. Detonar con Procmon
+1. Abre **Procmon** (acepta UAC + licencia). Empieza a capturar solo.
+2. **Filter → Filter…** → `Process Name` `is` `muestra.exe` → `Include` → **Add** → **OK**.
+3. **Edit → Clear Display** (limpia el ruido previo).
+4. Detona:
+   ```powershell
+   copy C:\analisis\muestra.bin C:\analisis\muestra.exe
+   C:\analisis\muestra.exe
+   ```
+   Déjalo **~30–60 s**.
+5. **Ctrl+E** para parar la captura.
+6. **File → Save** → **"Events displayed using current filter"** + formato **CSV** →
+   `\\VBOXSVR\transfer_vm\salida\procmon.csv`.
+   > ⚠️ Si guardas **"All events"** el CSV sale enorme (cientos de MB con ruido del
+   > sistema). En ese caso, filtra al árbol de la muestra con `--proceso` (paso 7).
+
+### 7. Generar el dictamen (en el host)
+```bash
+python dictaminar.py transfer_vm/salida/evidencia.json CASO-ID --procmon transfer_vm/salida/procmon.csv --proceso muestra.exe
+```
+`--proceso muestra.exe` filtra al **árbol de procesos** de la muestra (la muestra y
+los procesos que crea), descartando el ruido del sistema aunque hayas guardado
+"All events". El dictamen incluirá la **§8.7 "Análisis dinámico propio"** (procesos,
+ficheros escritos, persistencia en registro y red), diferenciada del comportamiento
+de VirusTotal (§8.6).
+
+### 8. Limpiar
+**Revierte** la instantánea `pre-detonacion` → elimina el malware ejecutado, su
+persistencia, los ficheros soltados y la exclusión de Defender. VM como nueva.
 
 ---
 
