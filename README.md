@@ -15,6 +15,10 @@ perito humano lo valide, en lugar de alucinar conclusiones.
 > revisión y validación de un perito antes de su emisión. No sustituye el juicio
 > pericial humano.
 
+> 📖 **¿Nunca has hecho esto?** Hay una **guía paso a paso desde cero** (clic a clic,
+> incluido cómo crear máquinas virtuales, carpetas compartidas y aislar la red):
+> **[`GUIA.md`](GUIA.md)** — y la misma en Word: **[`GUIA.docx`](GUIA.docx)**.
+
 ---
 
 ## Índice
