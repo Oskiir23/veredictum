@@ -19,14 +19,20 @@ from veredictum.detonacion import parse_procmon
 
 def main() -> None:
     args = sys.argv[1:]
-    procmon = None
-    if "--procmon" in args:
-        i = args.index("--procmon")
-        procmon = args[i + 1] if i + 1 < len(args) else None
-        del args[i : i + 2]
+    procmon = proceso = None
+    for flag, setter in (("--procmon", "procmon"), ("--proceso", "proceso")):
+        if flag in args:
+            i = args.index(flag)
+            val = args[i + 1] if i + 1 < len(args) else None
+            if setter == "procmon":
+                procmon = val
+            else:
+                proceso = val
+            del args[i : i + 2]
 
     if not args:
-        print("Uso: python dictaminar.py <evidencia.json> [caso_id] [--procmon <procmon.csv>]")
+        print("Uso: python dictaminar.py <evidencia.json> [caso_id] "
+              "[--procmon <procmon.csv>] [--proceso <muestra.exe>]")
         raise SystemExit(1)
 
     comprobar_clave()
@@ -35,9 +41,11 @@ def main() -> None:
 
     detonacion = None
     if procmon:
-        detonacion = parse_procmon(procmon)
+        print("[detonación] Parseando Procmon (puede tardar si el CSV es grande)...")
+        detonacion = parse_procmon(procmon, proceso=proceso)
         print(f"[detonación] Procmon: {detonacion.get('estado')} "
               f"(procesos={len(detonacion.get('procesos', []))}, "
+              f"persistencia={len(detonacion.get('persistencia', []))}, "
               f"red={len(detonacion.get('red', []))})")
 
     print(f"[Veredictum/Host] Dictaminando caso: {caso}\n")

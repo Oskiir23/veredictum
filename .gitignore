@@ -18,6 +18,7 @@ salida/
 # y entrada/ puede contener malware real.
 transfer_vm/*
 !transfer_vm/correr_en_vm.sh
+!transfer_vm/extraer_pe.ps1
 !transfer_vm/LEEME.md
 !transfer_vm/entrada/
 !transfer_vm/salida/
