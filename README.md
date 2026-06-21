@@ -7,6 +7,10 @@ forenses, un agente LLM razona sobre los hechos y genera un **borrador de
 dictamen pericial en Word** — marcando lo que **no** puede confirmar para que un
 perito humano lo valide, en lugar de alucinar conclusiones.
 
+<p align="center">
+  <img src="docs/demo.gif" alt="Demo: Veredictum analiza demo.eml y genera el borrador de dictamen pericial" width="780">
+</p>
+
 > Misma idea que hizo grande a VirusTotal: coger algo que hoy solo sabe hacer un
 > analista senior —lento y artesanal— y democratizarlo. El perito pasa de
 > **redactar** a **validar**.
