@@ -110,7 +110,7 @@ const perito = [
     ["DNI", "«00000000-X»"],
     ["Titulación", "Técnico Superior en ASIR · Máster en Ciberseguridad"],
     ["Acreditación profesional", "Perito Informático Forense"],
-    ["Correo electrónico", "seoscarretero@gmail.com"],
+    ["Correo electrónico", "«tu-correo@ejemplo.com»"],
   ], 3200),
   spacer(),
   H2("1.1. Juramento o promesa del perito"),
