@@ -387,7 +387,6 @@ tests/                 Pruebas de humo
   firmado ni asesoramiento legal.
 - El análisis de macros (`olevba`) requiere `oletools`; en una VM sin él, se
   omite (los PE no necesitan macros).
-- Soporte `.msg` (Outlook) y reglas YARA: en el roadmap.
 - Úsalo solo sobre evidencias para las que tengas autorización.
 
 ---
@@ -400,6 +399,38 @@ tests/                 Pruebas de humo
 - [x] **Detonación propia**: ingesta de artefactos (Procmon CSV) → dictamen. Ver guía abajo.
 - [ ] Automatizar el laboratorio de detonación (orquestar Sysmon/pcap).
 - [ ] Opción de **LLM local** (Ollama) para flujo 100 % offline.
+
+---
+
+## Preguntas frecuentes / Solución de problemas
+
+**Windows Defender borra la muestra al extraerla del correo.**
+Es lo esperado: el adjunto es un binario real. Excluye temporalmente la carpeta de
+análisis (p. ej. `C:\analisis`) en Defender **solo dentro de la VM de detonación**,
+nunca en tu equipo de trabajo.
+
+**`isinstance() arg 2 must be a type` al llamar al LLM (Gemini).**
+No uses `from __future__ import annotations` en los módulos de `tools/`: rompe el
+*function-calling* de Gemini, que necesita anotaciones de tipo reales.
+
+**Error instalando YARA en Python 3.14.**
+Usa el motor `yara-x` (no `yara-python`, que aún no tiene *wheel* para 3.14).
+
+**Se agota la cuota de Gemini (free tier).**
+Un análisis ≈ 7 peticiones. `llm.py` reintenta con *backoff* y cae a
+`gemini-2.5-flash-lite`; evita los modelos 2.0 (agotan el RPD antes).
+
+**VirusTotal aparece como "requiere verificación humana".**
+Sin `VT_API_KEY`, el dictamen marca la incertidumbre en vez de inventar el veredicto.
+Añade la clave en `.env` para cerrar esa sección.
+
+**El CSV de Procmon es enorme (cientos de MB).**
+Exporta solo los *eventos del filtro* (no «All events») y acota al árbol del proceso
+con `--proceso muestra.exe`.
+
+**En la VM aislada faltan `yara-x` / `oletools` / `extract-msg`.**
+Instálalos en la VM **con red** antes de aislarla; los *wheels* de Linux no se
+pueden empaquetar desde un host Windows.
 
 ---
 
